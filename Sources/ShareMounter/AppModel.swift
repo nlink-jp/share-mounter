@@ -74,8 +74,21 @@ final class AppModel: ObservableObject {
         reload()
     }
 
+    /// Persist edited share metadata/order and reflect it in the menu without
+    /// re-probing the OS mount table — each existing share keeps its current
+    /// state, and new shares start unmounted. Used for live-apply edits.
+    func updateShares(_ shares: [Share]) {
+        try? store.save(shares)
+        let previous = Dictionary(statuses.map { ($0.id, $0.state) }, uniquingKeysWith: { first, _ in first })
+        statuses = shares.map { ShareStatus(share: $0, state: previous[$0.id] ?? .unmounted) }
+    }
+
     func setPassword(_ password: String, for share: Share) {
         credentials.setPassword(password, for: share.credentialKey)
+    }
+
+    func removePassword(for share: Share) {
+        credentials.removePassword(for: share.credentialKey)
     }
 
     /// Whether a non-empty password is stored in the Keychain for this share.

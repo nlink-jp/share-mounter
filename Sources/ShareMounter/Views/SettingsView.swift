@@ -1,59 +1,72 @@
 import SwiftUI
 
-/// Register and edit shares. Passwords are written to the Keychain on Save and
-/// are never displayed back.
+/// Register and edit shares. Edits apply live (macOS-style, no Save button);
+/// the password is committed to the Keychain on Return or when the field loses
+/// focus, and is never displayed back.
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
     @State private var shares: [Share] = []
     @State private var selection: UUID?
     @State private var password: String = ""
     @State private var launchAtLogin = false
+    @FocusState private var passwordFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            HSplitView {
-                sidebar
-                    .frame(width: 190)
-                detail
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            Divider()
-            HStack {
-                Toggle("Launch at login", isOn: launchBinding)
-                Spacer()
-            }
-            .padding(8)
+        NavigationSplitView {
+            sidebar
+                .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 260)
+        } detail: {
+            detail
+                .navigationTitle(selectedShareName)
+        }
+        .frame(minWidth: 620, minHeight: 460)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footer
         }
         .onAppear {
             shares = model.shares
             launchAtLogin = model.isLoginItemEnabled
         }
-        .onChange(of: selection) { _ in password = "" }
+        .onChange(of: selection) { _ in
+            commitPassword()
+            password = ""
+        }
+        .onDisappear { commitPassword() }
     }
 
-    private var launchBinding: Binding<Bool> {
-        Binding(get: { launchAtLogin },
-                set: { newValue in launchAtLogin = newValue; model.setLoginItem(newValue) })
+    private var selectedShareName: String {
+        shares.first(where: { $0.id == selection })?.effectiveDisplayName ?? "Shares"
     }
+
+    // MARK: - Sidebar
 
     private var sidebar: some View {
-        VStack(spacing: 0) {
-            List(selection: $selection) {
-                ForEach(shares) { share in
-                    Text(share.effectiveDisplayName).tag(share.id)
-                }
+        List(selection: $selection) {
+            ForEach(shares) { share in
+                Text(share.effectiveDisplayName).tag(share.id)
             }
-            Divider()
-            HStack(spacing: 8) {
+            .onMove { indices, newOffset in
+                shares.move(fromOffsets: indices, toOffset: newOffset)
+                persist()
+            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: 2) {
                 Button { addShare() } label: { Image(systemName: "plus") }
+                    .help("Add a share")
                 Button { removeSelected() } label: { Image(systemName: "minus") }
                     .disabled(selection == nil)
+                    .help("Remove the selected share")
                 Spacer()
             }
             .buttonStyle(.borderless)
-            .padding(6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(.bar)
         }
     }
+
+    // MARK: - Detail
 
     @ViewBuilder private var detail: some View {
         if let index = shares.firstIndex(where: { $0.id == selection }) {
@@ -70,12 +83,6 @@ struct SettingsView: View {
                         passwordField(index)
                     }
                     Toggle("Auto-mount at login", isOn: boolBinding(index, \.autoMount))
-                    HStack {
-                        Spacer()
-                        Button("Save") { save(index) }
-                            .keyboardShortcut(.defaultAction)
-                    }
-                    .padding(.top, 4)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,6 +92,19 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var footer: some View {
+        HStack {
+            Toggle("Launch at login", isOn: launchBinding)
+            Spacer()
+            Text("v\(AppInfo.version)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.bar)
     }
 
     @ViewBuilder
@@ -106,9 +126,13 @@ struct SettingsView: View {
             SecureField("", text: $password,
                         prompt: Text(stored ? "Leave blank to keep the saved password" : "Required"))
                 .textFieldStyle(.roundedBorder)
+                .focused($passwordFocused)
+                .onSubmit { commitPassword() }
+                .onChange(of: passwordFocused) { focused in
+                    if !focused { commitPassword() }
+                }
             if !password.isEmpty {
-                Label("Will be saved to the Keychain when you click Save",
-                      systemImage: "pencil.circle")
+                Label("Press Return to save it to the Keychain", systemImage: "return")
                     .font(.caption).foregroundStyle(.secondary)
             } else if stored {
                 Label("Password saved in Keychain", systemImage: "checkmark.circle.fill")
@@ -120,41 +144,49 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Bindings
+    // MARK: - Bindings (live-apply)
+
+    private var launchBinding: Binding<Bool> {
+        Binding(get: { launchAtLogin },
+                set: { newValue in launchAtLogin = newValue; model.setLoginItem(newValue) })
+    }
 
     private func stringBinding(_ index: Int, _ keyPath: WritableKeyPath<Share, String>) -> Binding<String> {
         Binding(get: { shares[index][keyPath: keyPath] },
-                set: { shares[index][keyPath: keyPath] = $0 })
+                set: { shares[index][keyPath: keyPath] = $0; persist() })
     }
 
     private func boolBinding(_ index: Int, _ keyPath: WritableKeyPath<Share, Bool>) -> Binding<Bool> {
         Binding(get: { shares[index][keyPath: keyPath] },
-                set: { shares[index][keyPath: keyPath] = $0 })
+                set: { shares[index][keyPath: keyPath] = $0; persist() })
     }
 
     // MARK: - Actions
+
+    /// Persist the current metadata/order to disk and reflect it in the menu.
+    private func persist() { model.updateShares(shares) }
+
+    private func commitPassword() {
+        guard let index = shares.firstIndex(where: { $0.id == selection }) else { return }
+        guard !password.isEmpty, !shares[index].isGuest else { return }
+        model.setPassword(password, for: shares[index])
+        password = ""
+    }
 
     private func addShare() {
         let share = Share(displayName: "New Share")
         shares.append(share)
         selection = share.id
         password = ""
+        persist()
     }
 
     private func removeSelected() {
         guard let id = selection, let index = shares.firstIndex(where: { $0.id == id }) else { return }
+        model.removePassword(for: shares[index])
         shares.remove(at: index)
         selection = nil
-        model.saveShares(shares)
-    }
-
-    private func save(_ index: Int) {
-        // Save the password first so the re-render triggered by saveShares picks
-        // up the new "saved in Keychain" state immediately.
-        if !password.isEmpty, !shares[index].isGuest {
-            model.setPassword(password, for: shares[index])
-        }
-        model.saveShares(shares)
         password = ""
+        persist()
     }
 }

@@ -28,6 +28,36 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.statuses.first?.state, .unmounted)
     }
 
+    func testUpdateSharesPersistsOrderAndPreservesState() throws {
+        let a = Share(host: "h", shareName: "a")
+        let b = Share(host: "h", shareName: "b")
+        let store = try tempStore([a, b])
+        let inventory = FakeInventory()
+        inventory.mounts = [MountedVolume(from: "//h/a", path: "/Volumes/a")]
+        let model = AppModel(store: store, credentials: InMemoryCredentialStore(),
+                             mounter: FakeMounter(), inventory: inventory)
+        XCTAssertEqual(model.statuses.map { $0.share.shareName }, ["a", "b"])
+        XCTAssertEqual(model.statuses.first?.state, .mounted(path: "/Volumes/a"))
+
+        // Reorder without re-probing the OS: order changes, "a" keeps its state.
+        model.updateShares([b, a])
+        XCTAssertEqual(model.statuses.map { $0.share.shareName }, ["b", "a"])
+        XCTAssertEqual(model.statuses.first(where: { $0.share.shareName == "a" })?.state,
+                       .mounted(path: "/Volumes/a"))
+        XCTAssertEqual(store.load().map { $0.shareName }, ["b", "a"])
+    }
+
+    func testRemovePasswordClearsKeychainEntry() throws {
+        let share = Share(host: "h", shareName: "s", username: "u")
+        let store = try tempStore([share])
+        let creds = InMemoryCredentialStore([share.credentialKey: "pw"])
+        let model = AppModel(store: store, credentials: creds,
+                             mounter: FakeMounter(), inventory: FakeInventory())
+        XCTAssertTrue(model.hasStoredPassword(for: model.shares[0]))
+        model.removePassword(for: model.shares[0])
+        XCTAssertFalse(model.hasStoredPassword(for: model.shares[0]))
+    }
+
     func testReloadReflectsExternalUnmount() throws {
         let store = try tempStore([Share(host: "h", shareName: "s")])
         let inventory = FakeInventory()

@@ -28,8 +28,9 @@ Or download `ShareMounter.app` from the [latest release](https://github.com/nlin
 
 ## Status
 
-v0.1.0 — initial release. See the RFP for design background:
-[docs/en/share-mounter-rfp.md](docs/en/share-mounter-rfp.md).
+Released — see the [changelog](CHANGELOG.md) and
+[releases](https://github.com/nlink-jp/share-mounter/releases). Design
+background is in the RFP: [docs/en/share-mounter-rfp.md](docs/en/share-mounter-rfp.md).
 
 ## Build
 

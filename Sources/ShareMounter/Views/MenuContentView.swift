@@ -1,7 +1,9 @@
+import AppKit
 import SwiftUI
 
-/// The dropdown shown from the menu-bar icon: one row per share (click toggles
-/// mount/unmount), plus settings and quit.
+/// The dropdown shown from the menu-bar icon: one submenu per share with
+/// explicit Mount / Unmount / Reveal actions (so a share can't be unmounted by
+/// an accidental single click), plus settings and quit.
 struct MenuContentView: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.openWindow) private var openWindow
@@ -13,18 +15,33 @@ struct MenuContentView: View {
             Divider()
         } else {
             ForEach(model.statuses) { status in
-                Button {
-                    model.toggle(status.share)
-                } label: {
-                    Text("\(glyph(for: status.state))  \(status.share.effectiveDisplayName)")
+                Menu("\(glyph(for: status.state))  \(status.share.effectiveDisplayName)") {
+                    Button("Mount") { model.mount(status.share) }
+                        .disabled(!canMount(status.state))
+                    Button("Unmount") { model.unmount(status.share) }
+                        .disabled(!canUnmount(status.state))
+                    if case .mounted(let path) = status.state {
+                        Divider()
+                        Button("Reveal in Finder") {
+                            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+                        }
+                    }
+                    if case .error(let message) = status.state {
+                        Divider()
+                        Text(message)
+                    }
                 }
-                .disabled(isBusy(status.state))
             }
             Divider()
         }
 
+        Button("About ShareMounter") { showAbout() }
         Button("Settings…") { openSettings() }
             .keyboardShortcut(",", modifiers: .command)
+
+        Divider()
+
+        Text("Version \(AppInfo.version)")
         Button("Quit ShareMounter") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q", modifiers: .command)
     }
@@ -37,6 +54,18 @@ struct MenuContentView: View {
         openWindow(id: WindowID.settings)
     }
 
+    /// Show the standard About panel, passing the app icon explicitly so it
+    /// appears (the panel reads it from the bundle's AppIcon in a packaged app).
+    private func showAbout() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        var options: [NSApplication.AboutPanelOptionKey: Any] = [:]
+        if let icon = NSApp.applicationIconImage {
+            options[.applicationIcon] = icon
+        }
+        NSApp.orderFrontStandardAboutPanel(options: options)
+    }
+
     private func glyph(for state: MountState) -> String {
         switch state {
         case .mounted: return "✓"
@@ -46,10 +75,15 @@ struct MenuContentView: View {
         }
     }
 
-    private func isBusy(_ state: MountState) -> Bool {
+    private func canMount(_ state: MountState) -> Bool {
         switch state {
-        case .mounting, .unmounting: return true
+        case .unmounted, .error: return true
         default: return false
         }
+    }
+
+    private func canUnmount(_ state: MountState) -> Bool {
+        if case .mounted = state { return true }
+        return false
     }
 }

@@ -41,8 +41,10 @@ Sources/ShareMounter/
     LoginItemManager.swift      SMAppService launch-at-login (protocol + fake)
     NetworkMonitor.swift        NWPathMonitor rising-edge → re-mount callback
   Views/
-    MenuContentView.swift       menu: share rows (toggle) + settings/quit
-    SettingsView.swift          register/edit shares; password → Keychain
+    MenuContentView.swift       menu: per-share submenu (Mount/Unmount/Reveal),
+                                About, version line, settings/quit
+    SettingsView.swift          NavigationSplitView; drag-reorder, live-apply
+                                (no Save), password → Keychain on Return/blur
 Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
                                 ReachabilityWaiter, CredentialStore, AppModel
                                 (+ Fakes.swift doubles)
@@ -68,12 +70,7 @@ Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
 
 ## Status
 
-Phase 1 + Phase 2 code complete: `swift build` clean, `swift test` green
-(43 tests). Wired: `SMAppService` launch-at-login (Settings toggle),
-reachability-gated `autoMountAll()` at launch, and re-mount on `NWPathMonitor`
-recovery / wake-from-sleep. Icon present (`assets/AppIcon-1024.png`).
-
-**Not yet done — on-device E2E:** the "mounts a real SMB share with no Finder
-window, shows in the sidebar, survives sleep/VPN" check needs a live SMB server
-and must be run on real hardware (per RFP Phase 2 review). **Phase 3:** release
-(notarize, Homebrew tap, submodule, profile, check-org).
+Released (public, Developer ID signed + notarized, Homebrew tap, util-series
+submodule, check-org green). On-device E2E done against a real SMB server: no
+Finder window on mount, sidebar volume, config JSON carries no password.
+`swift test` green. Icon present (`assets/AppIcon-1024.png`).

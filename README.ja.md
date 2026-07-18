@@ -28,8 +28,9 @@ brew install nlink-jp/tap/share-mounter
 
 ## ステータス
 
-v0.1.0 — 初回リリース。設計の背景は RFP を参照：
-[docs/ja/share-mounter-rfp.ja.md](docs/ja/share-mounter-rfp.ja.md)。
+リリース済み — [CHANGELOG](CHANGELOG.md) と
+[releases](https://github.com/nlink-jp/share-mounter/releases) を参照。設計の
+背景は RFP：[docs/ja/share-mounter-rfp.ja.md](docs/ja/share-mounter-rfp.ja.md)。
 
 ## ビルド
 

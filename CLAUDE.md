@@ -28,5 +28,4 @@ Keychain auth, per-share auto-mount toggle, manual mount/unmount from the menu.
 
 ## Series
 
-Part of **util-series**. Currently in `_wip/`; on integration, push to
-`github.com/nlink-jp/share-mounter` and add as a submodule.
+Part of **util-series** (submodule). Repo: `github.com/nlink-jp/share-mounter`.

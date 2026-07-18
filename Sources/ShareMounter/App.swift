@@ -5,6 +5,15 @@ enum WindowID {
     static let settings = "settings"
 }
 
+enum AppInfo {
+    /// The app's short version (from Info.plist), with any leading "v" stripped.
+    /// Falls back to "dev" when run without a bundle (e.g. `swift run`).
+    static var version: String {
+        let raw = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "dev"
+        return raw.hasPrefix("v") ? String(raw.dropFirst()) : raw
+    }
+}
+
 @main
 struct ShareMounterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -24,9 +33,9 @@ struct ShareMounterApp: App {
         Window("ShareMounter Settings", id: WindowID.settings) {
             SettingsView()
                 .environmentObject(appDelegate.model)
-                .frame(minWidth: 560, minHeight: 440)
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: 680, height: 560)
+        .windowResizability(.contentMinSize)
     }
 }
 
