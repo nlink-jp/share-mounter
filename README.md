@@ -17,13 +17,18 @@ login, and toggle any of them mount/unmount straight from the menu bar.
 
 > **Apple Silicon, macOS 13 (Ventura) or later.** SMB only.
 
+## Install
+
+```sh
+brew install nlink-jp/tap/share-mounter
+```
+
+Or download `ShareMounter.app` from the [latest release](https://github.com/nlink-jp/share-mounter/releases)
+(Developer ID signed + notarized, Apple Silicon).
+
 ## Status
 
-Early development (`_wip`). Phase 1 (core mount engine, credential + config
-storage, reachability) and Phase 2 (login-at-launch via `SMAppService`,
-reachability-gated auto-mount, re-mount on wake / network recovery) are
-implemented and unit-tested (43 tests). Still pending: on-device end-to-end
-verification against a live SMB server, then release (Phase 3). See
+v0.1.0 — initial release. See the RFP for design background:
 [docs/en/share-mounter-rfp.md](docs/en/share-mounter-rfp.md).
 
 ## Build

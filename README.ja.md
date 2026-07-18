@@ -17,12 +17,18 @@ framework** 経由でマウントするため、ウィンドウが出ず、共�
 
 > **Apple Silicon・macOS 13 (Ventura) 以降。** SMB 専用。
 
+## インストール
+
+```sh
+brew install nlink-jp/tap/share-mounter
+```
+
+または [最新リリース](https://github.com/nlink-jp/share-mounter/releases) から
+`ShareMounter.app` をダウンロード（Developer ID 署名 + notarize 済み、Apple Silicon）。
+
 ## ステータス
 
-初期開発中（`_wip`）。Phase 1（マウントエンジン、認証情報・設定の保存、到達確認）と
-Phase 2（`SMAppService` ログイン起動、到達確認付き自動マウント、スリープ復帰／
-ネットワーク復帰時の再マウント）は実装済み・ユニットテスト済み（43 tests）。残り
-は実 SMB サーバでの実機 E2E 検証、その後リリース（Phase 3）。詳細は
+v0.1.0 — 初回リリース。設計の背景は RFP を参照：
 [docs/ja/share-mounter-rfp.ja.md](docs/ja/share-mounter-rfp.ja.md)。
 
 ## ビルド
