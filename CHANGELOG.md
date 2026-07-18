@@ -3,6 +3,24 @@
 All notable changes to share-mounter are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.1] - 2026-07-19
+
+### Added
+- Each share in the menu bar is now a submenu with explicit **Mount / Unmount /
+  Reveal in Finder** actions, so a share can't be unmounted by an accidental
+  single click.
+- The app version is shown directly in the menu and in the Settings footer, and
+  an **About ShareMounter** item opens the standard About panel from the menu.
+- **Drag to reorder** shares in Settings; the menu reflects the new order.
+
+### Changed
+- Settings **apply live** (macOS-style) — the Save button is gone. The password
+  is committed to the Keychain on Return or when its field loses focus.
+- Settings uses a standard `NavigationSplitView` window: proper title bar and a
+  larger default size so the detail pane no longer shows a scrollbar by default.
+
+[0.1.1]: https://github.com/nlink-jp/share-mounter/releases/tag/v0.1.1
+
 ## [0.1.0] - 2026-07-18
 
 Initial release.
