@@ -30,17 +30,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mounter: NetFSMounter(),
         inventory: SMBMountInventory())
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        // Reflect any volumes already mounted at launch.
-        model.reload()
+    private let networkMonitor = NetworkMonitor()
 
-        // Phase 2 wires the rest of the "stays mounted" behavior here:
-        //   - SMAppService login registration (launch at login)
-        //   - reachability-gated auto-mount of `model.autoMountShares()`
-        //   - NWPathMonitor + wake-from-sleep notifications → re-mount
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Reflect any volumes already mounted at launch, then auto-mount the
+        // flagged shares (each gated on the server becoming reachable).
+        model.reload()
+        Task { await model.autoMountAll() }
+
+        // Re-mount when the network path comes back (Wi-Fi/VPN reconnect).
+        networkMonitor.onBecameSatisfied = { [weak self] in
+            Task { @MainActor in await self?.model.autoMountAll() }
+        }
+        networkMonitor.start()
+
+        // Re-mount after waking from sleep.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(didWake),
+            name: NSWorkspace.didWakeNotification, object: nil)
+
         NotificationCenter.default.addObserver(
             self, selector: #selector(windowClosed),
             name: NSWindow.willCloseNotification, object: nil)
+    }
+
+    @objc private func didWake(_ notification: Notification) {
+        Task { @MainActor in await model.autoMountAll() }
     }
 
     /// Return to the menu-bar-only activation policy once no window is visible.

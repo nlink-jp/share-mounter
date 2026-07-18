@@ -38,6 +38,8 @@ Sources/ShareMounter/
     NetFSMounter.swift          NetFSMountURLSync (NoUI, /Volumes) + unmount(2)
     SMBMountInventory.swift      getmntinfo → mounted volumes
     Reachability.swift          PortProbe + Backoff + ReachabilityWaiter
+    LoginItemManager.swift      SMAppService launch-at-login (protocol + fake)
+    NetworkMonitor.swift        NWPathMonitor rising-edge → re-mount callback
   Views/
     MenuContentView.swift       menu: share rows (toggle) + settings/quit
     SettingsView.swift          register/edit shares; password → Keychain
@@ -66,9 +68,12 @@ Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
 
 ## Status
 
-Phase 1 complete: `swift build` clean, `swift test` green (39 tests); basic
-menu-bar UI + settings run. **Phase 2 (not yet wired):** `SMAppService`
-login-at-launch, reachability-gated auto-mount of `autoMountShares()`, and
-re-mount on `NWPathMonitor` change / wake-from-sleep. **Phase 3:** release
-(README/CHANGELOG in sync, notarize, Homebrew tap, submodule, profile, check-org).
-Icon present (`assets/AppIcon-1024.png`).
+Phase 1 + Phase 2 code complete: `swift build` clean, `swift test` green
+(43 tests). Wired: `SMAppService` launch-at-login (Settings toggle),
+reachability-gated `autoMountAll()` at launch, and re-mount on `NWPathMonitor`
+recovery / wake-from-sleep. Icon present (`assets/AppIcon-1024.png`).
+
+**Not yet done — on-device E2E:** the "mounts a real SMB share with no Finder
+window, shows in the sidebar, survives sleep/VPN" check needs a live SMB server
+and must be run on real hardware (per RFP Phase 2 review). **Phase 3:** release
+(notarize, Homebrew tap, submodule, profile, check-org).

@@ -7,16 +7,33 @@ struct SettingsView: View {
     @State private var shares: [Share] = []
     @State private var selection: UUID?
     @State private var password: String = ""
+    @State private var launchAtLogin = false
 
     var body: some View {
-        HSplitView {
-            sidebar
-                .frame(width: 190)
-            detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 0) {
+            HSplitView {
+                sidebar
+                    .frame(width: 190)
+                detail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            Divider()
+            HStack {
+                Toggle("Launch at login", isOn: launchBinding)
+                Spacer()
+            }
+            .padding(8)
         }
-        .onAppear { shares = model.shares }
+        .onAppear {
+            shares = model.shares
+            launchAtLogin = model.isLoginItemEnabled
+        }
         .onChange(of: selection) { _ in password = "" }
+    }
+
+    private var launchBinding: Binding<Bool> {
+        Binding(get: { launchAtLogin },
+                set: { newValue in launchAtLogin = newValue; model.setLoginItem(newValue) })
     }
 
     private var sidebar: some View {

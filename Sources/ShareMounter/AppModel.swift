@@ -27,12 +27,22 @@ final class AppModel: ObservableObject {
     private let credentials: CredentialStore
     private let mounter: Mounter
     private let inventory: MountInventory
+    private let reachability: ReachabilityWaiter
+    private let loginItems: LoginItemManaging
+    private var isAutoMounting = false
 
-    init(store: ShareStore, credentials: CredentialStore, mounter: Mounter, inventory: MountInventory) {
+    init(store: ShareStore,
+         credentials: CredentialStore,
+         mounter: Mounter,
+         inventory: MountInventory,
+         reachability: ReachabilityWaiter = ReachabilityWaiter(probe: NWPortProbe()),
+         loginItems: LoginItemManaging = LoginItemManager()) {
         self.store = store
         self.credentials = credentials
         self.mounter = mounter
         self.inventory = inventory
+        self.reachability = reachability
+        self.loginItems = loginItems
         reload()
     }
 
@@ -61,8 +71,40 @@ final class AppModel: ObservableObject {
         credentials.setPassword(password, for: share.credentialKey)
     }
 
-    /// Shares flagged for auto-mount (login / network-recovery driven in Phase 2).
+    /// Shares flagged for auto-mount (driven at login / on network recovery).
     func autoMountShares() -> [Share] { shares.filter(\.autoMount) }
+
+    // MARK: - Login item
+
+    var isLoginItemEnabled: Bool { loginItems.isEnabled }
+
+    func setLoginItem(_ enabled: Bool) {
+        try? loginItems.setEnabled(enabled)
+    }
+
+    // MARK: - Auto-mount
+
+    /// Mount every auto-mount share that isn't already mounted, each gated on the
+    /// server becoming reachable first (so a login-time / post-wake attempt
+    /// doesn't fail merely because the network/VPN isn't up yet). Re-entrant
+    /// calls (launch + network-recovery firing together) are coalesced.
+    func autoMountAll() async {
+        guard !isAutoMounting else { return }
+        isAutoMounting = true
+        defer { isAutoMounting = false }
+
+        for share in autoMountShares() {
+            if case .mounted = state(of: share.id) { continue }
+            setState(share.id, .mounting)
+            let reachable = await reachability.waitUntilReachable(host: share.host)
+            guard reachable else {
+                setState(share.id, .error("Server unreachable"))
+                continue
+            }
+            if case .mounted = state(of: share.id) { continue }
+            await performMount(share)
+        }
+    }
 
     // MARK: - Actions
 

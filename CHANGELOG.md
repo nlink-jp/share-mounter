@@ -19,5 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - `ReachabilityWaiter` (port-445 probe + exponential `Backoff`) for the
     network-not-up-yet-at-login case.
   - `AppModel` orchestrator with a basic menu-bar UI and settings window.
+- Phase 2 (OS integration):
+  - `LoginItemManager` (`SMAppService`) + "Launch at login" toggle in Settings.
+  - `AppModel.autoMountAll()` — reachability-gated auto-mount of flagged shares,
+    skipping already-mounted ones; re-entrant calls are coalesced.
+  - `NetworkMonitor` (`NWPathMonitor`) + wake-from-sleep observer → re-mount on
+    network recovery and after sleep, so shares stay mounted across VPN
+    reconnects and wake.
 
 [Unreleased]: https://github.com/nlink-jp/share-mounter

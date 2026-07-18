@@ -20,9 +20,10 @@ login, and toggle any of them mount/unmount straight from the menu bar.
 ## Status
 
 Early development (`_wip`). Phase 1 (core mount engine, credential + config
-storage, reachability) is implemented and unit-tested; a basic menu-bar UI runs.
-Phase 2 wires login-at-launch (`SMAppService`), reachability-gated auto-mount,
-and re-mount on wake / network recovery. See
+storage, reachability) and Phase 2 (login-at-launch via `SMAppService`,
+reachability-gated auto-mount, re-mount on wake / network recovery) are
+implemented and unit-tested (43 tests). Still pending: on-device end-to-end
+verification against a live SMB server, then release (Phase 3). See
 [docs/en/share-mounter-rfp.md](docs/en/share-mounter-rfp.md).
 
 ## Build
