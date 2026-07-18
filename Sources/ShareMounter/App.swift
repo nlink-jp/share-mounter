@@ -1,6 +1,10 @@
 import AppKit
 import SwiftUI
 
+enum WindowID {
+    static let settings = "settings"
+}
+
 @main
 struct ShareMounterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -14,11 +18,15 @@ struct ShareMounterApp: App {
         }
         .menuBarExtraStyle(.menu)
 
-        Settings {
+        // A plain Window (opened via openWindow) rather than the SwiftUI
+        // `Settings` scene: the imperative "open Settings" path relies on a
+        // private AppKit selector that is unreliable across macOS versions.
+        Window("ShareMounter Settings", id: WindowID.settings) {
             SettingsView()
                 .environmentObject(appDelegate.model)
-                .frame(minWidth: 560, minHeight: 420)
+                .frame(minWidth: 560, minHeight: 440)
         }
+        .windowResizability(.contentSize)
     }
 }
 
@@ -45,9 +53,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         networkMonitor.start()
 
         // Re-mount after waking from sleep.
-        NSWorkspace.shared.notificationCenter.addObserver(
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        workspaceCenter.addObserver(
             self, selector: #selector(didWake),
             name: NSWorkspace.didWakeNotification, object: nil)
+
+        // Keep the menu in sync when a volume mounts/unmounts out from under us
+        // (e.g. an eject from Finder), so the app's state can't drift.
+        for name in [NSWorkspace.didMountNotification,
+                     NSWorkspace.didUnmountNotification,
+                     NSWorkspace.didRenameVolumeNotification] {
+            workspaceCenter.addObserver(
+                self, selector: #selector(volumesChanged), name: name, object: nil)
+        }
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(windowClosed),
@@ -56,6 +74,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func didWake(_ notification: Notification) {
         Task { @MainActor in await model.autoMountAll() }
+    }
+
+    @objc private func volumesChanged(_ notification: Notification) {
+        Task { @MainActor in model.reload() }
     }
 
     /// Return to the menu-bar-only activation policy once no window is visible.
@@ -67,12 +89,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
-}
-
-/// Open the SwiftUI `Settings` scene from an imperative context (macOS 13+).
-@MainActor
-func openSettingsWindow() {
-    NSApp.setActivationPolicy(.regular)
-    NSApp.activate(ignoringOtherApps: true)
-    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
 }

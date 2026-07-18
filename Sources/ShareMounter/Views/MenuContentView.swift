@@ -4,11 +4,12 @@ import SwiftUI
 /// mount/unmount), plus settings and quit.
 struct MenuContentView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         if model.statuses.isEmpty {
             Text("No shares configured")
-            Button("Add a share…") { openSettingsWindow() }
+            Button("Add a share…") { openSettings() }
             Divider()
         } else {
             ForEach(model.statuses) { status in
@@ -22,10 +23,18 @@ struct MenuContentView: View {
             Divider()
         }
 
-        Button("Settings…") { openSettingsWindow() }
+        Button("Settings…") { openSettings() }
             .keyboardShortcut(",", modifiers: .command)
         Button("Quit ShareMounter") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q", modifiers: .command)
+    }
+
+    /// Bring the app forward and open the settings window. Setting `.regular`
+    /// first lets the (LSUIElement) app show a real, focusable window.
+    private func openSettings() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: WindowID.settings)
     }
 
     private func glyph(for state: MountState) -> String {

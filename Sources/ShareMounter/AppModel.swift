@@ -49,11 +49,18 @@ final class AppModel: ObservableObject {
     var shares: [Share] { statuses.map(\.share) }
 
     /// Re-read the share list and recompute each share's state from the OS mount
-    /// table (so already-mounted shares show as mounted at launch).
+    /// table. Called at launch and whenever a volume mounts/unmounts (including
+    /// an external unmount from Finder), so the menu never drifts from reality.
     func reload() {
         let shares = store.load()
         let mounts = inventory.currentMounts()
+        let previous = Dictionary(statuses.map { ($0.id, $0.state) }, uniquingKeysWith: { first, _ in first })
         statuses = shares.map { share in
+            // Preserve an in-flight operation so a concurrent volume event (or a
+            // settings save) doesn't clobber a mount/unmount that's underway.
+            if let prev = previous[share.id], prev == .mounting || prev == .unmounting {
+                return ShareStatus(share: share, state: prev)
+            }
             if let path = MountMatcher.mountPath(for: share, in: mounts) {
                 return ShareStatus(share: share, state: .mounted(path: path))
             }
@@ -69,6 +76,11 @@ final class AppModel: ObservableObject {
 
     func setPassword(_ password: String, for share: Share) {
         credentials.setPassword(password, for: share.credentialKey)
+    }
+
+    /// Whether a non-empty password is stored in the Keychain for this share.
+    func hasStoredPassword(for share: Share) -> Bool {
+        !(credentials.password(for: share.credentialKey) ?? "").isEmpty
     }
 
     /// Shares flagged for auto-mount (driven at login / on network recovery).

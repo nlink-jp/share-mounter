@@ -27,4 +27,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
     network recovery and after sleep, so shares stay mounted across VPN
     reconnects and wake.
 
+### Changed
+- Settings open in a dedicated window (reliable across macOS versions) rather
+  than via the private `showSettingsWindow:` selector.
+- Settings form is left-aligned with full-width fields and labels above.
+- Password field shows whether a credential is stored in the Keychain
+  (saved / will-save-on-Save / none), so the save state is unambiguous.
+
+### Fixed
+- Menu no longer drifts from reality when a volume is ejected from Finder:
+  `NSWorkspace` mount/unmount/rename observers refresh state from the OS.
+
 [Unreleased]: https://github.com/nlink-jp/share-mounter

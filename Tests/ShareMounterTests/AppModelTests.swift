@@ -28,6 +28,20 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.statuses.first?.state, .unmounted)
     }
 
+    func testReloadReflectsExternalUnmount() throws {
+        let store = try tempStore([Share(host: "h", shareName: "s")])
+        let inventory = FakeInventory()
+        inventory.mounts = [MountedVolume(from: "//h/s", path: "/Volumes/s")]
+        let model = AppModel(store: store, credentials: InMemoryCredentialStore(),
+                             mounter: FakeMounter(), inventory: inventory)
+        XCTAssertEqual(model.statuses.first?.state, .mounted(path: "/Volumes/s"))
+
+        // External Finder eject: the volume disappears from the OS mount table.
+        inventory.mounts = []
+        model.reload()
+        XCTAssertEqual(model.statuses.first?.state, .unmounted)
+    }
+
     func testPerformMountSuccessPassesCredentials() async throws {
         let share = Share(host: "h", shareName: "s", username: "alice")
         let store = try tempStore([share])
@@ -84,6 +98,17 @@ final class AppModelTests: XCTestCase {
 
         XCTAssertEqual(model.statuses.first?.state, .unmounted)
         XCTAssertEqual(mounter.unmountCalls, ["/Volumes/s"])
+    }
+
+    func testHasStoredPasswordReflectsKeychain() throws {
+        let store = try tempStore([Share(host: "h", shareName: "s", username: "u")])
+        let model = AppModel(store: store, credentials: InMemoryCredentialStore(),
+                             mounter: FakeMounter(), inventory: FakeInventory())
+        XCTAssertFalse(model.hasStoredPassword(for: model.shares[0]))
+        model.setPassword("pw", for: model.shares[0])
+        XCTAssertTrue(model.hasStoredPassword(for: model.shares[0]))
+        model.setPassword("", for: model.shares[0])
+        XCTAssertFalse(model.hasStoredPassword(for: model.shares[0]))
     }
 
     func testAutoMountSharesFiltersFlag() throws {
