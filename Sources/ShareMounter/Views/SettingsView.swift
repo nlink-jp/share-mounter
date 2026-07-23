@@ -12,17 +12,22 @@ struct SettingsView: View {
     @FocusState private var passwordFocused: Bool
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-                .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 260)
-        } detail: {
-            detail
-                .navigationTitle(selectedShareName)
-        }
-        .frame(minWidth: 620, minHeight: 460)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // The footer is a VStack sibling, not a `.safeAreaInset` on the split
+        // view: a bottom inset applied to a NavigationSplitView does not shorten
+        // the sidebar column, so the sidebar keeps drawing full-height and its
+        // own bottom bar (the +/- buttons) ends up hidden behind the footer.
+        VStack(spacing: 0) {
+            NavigationSplitView {
+                sidebar
+                    .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 260)
+            } detail: {
+                detail
+                    .navigationTitle(selectedShareName)
+            }
+            Divider()
             footer
         }
+        .frame(minWidth: 620, minHeight: 460)
         .onAppear {
             shares = model.shares
             launchAtLogin = model.isLoginItemEnabled

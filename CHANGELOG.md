@@ -3,6 +3,17 @@
 All notable changes to share-mounter are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.2] - 2026-07-23
+
+### Fixed
+- The **+ / −** buttons for adding and removing shares were invisible in
+  Settings. The footer ("Launch at login" / version) was attached to the
+  `NavigationSplitView` as a bottom `safeAreaInset`, which does not shorten the
+  sidebar column — the sidebar kept drawing full-height and its button bar ended
+  up underneath the footer. The footer is now a sibling in a `VStack`.
+
+[0.1.2]: https://github.com/nlink-jp/share-mounter/releases/tag/v0.1.2
+
 ## [0.1.1] - 2026-07-19
 
 ### Added

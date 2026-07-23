@@ -65,6 +65,14 @@ Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
 - **All OS access is behind protocols** (`Mounter`, `MountInventory`,
   `CredentialStore`, `PortProbe`) so `AppModel` and the matcher/backoff logic are
   unit-tested with doubles; NetFS/getmntinfo/NWConnection impls run on real HW.
+- **Never put a bottom `safeAreaInset` on the `NavigationSplitView`** in
+  `SettingsView`. The inset shortens the split view's own frame but *not* the
+  sidebar column, which keeps drawing full-window-height — so the sidebar's
+  bottom bar (the +/− buttons) lands in the same band as the footer and is
+  painted over by it (v0.1.1 shipped with the buttons invisible). The footer
+  must stay a `VStack` sibling. The sidebar's own `.safeAreaInset` bar is fine.
+  Layout regressions like this are not unit-testable here; verify by building
+  the app and opening Settings.
 - **`MountMatcher` is pure** and handles `//host/share`, `//user@host/share`,
   `//DOMAIN;user@host/share`, sub-paths, and percent-encoding, case-insensitively.
 
