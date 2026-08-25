@@ -3,7 +3,7 @@
 All notable changes to share-mounter are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.1.3] - 2026-08-25
 
 ### Fixed
 
@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   LaunchServices launches, and a startup guard exits with a stderr note
   when another instance is already running (covers direct binary exec
   and `open -n`)
+
+[0.1.3]: https://github.com/nlink-jp/share-mounter/releases/tag/v0.1.3
 
 ## [0.1.2] - 2026-07-23
 
