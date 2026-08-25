@@ -17,6 +17,10 @@ login, and toggle any of them mount/unmount straight from the menu bar.
 
 > **Apple Silicon, macOS 13 (Ventura) or later.** SMB only.
 
+The app is single-instance: starting a second copy (for example, a
+notification click resolving to a different copy of the .app) logs to
+stderr and exits, leaving the running instance alone.
+
 ## Install
 
 ```sh

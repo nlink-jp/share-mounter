@@ -27,7 +27,10 @@ make brew       # generate the Homebrew cask into ../homebrew-tap
 
 ```
 Sources/ShareMounter/
-  App.swift                     @main; MenuBarExtra + Settings scene + AppDelegate
+  Entry.swift                   @main; single-instance guard, then ShareMounterApp.main()
+  SingleInstance.swift          singleInstanceDecision() — startup duplicate-
+                                instance guard (pure; pids in, decision out)
+  App.swift                     MenuBarExtra + Settings scene + AppDelegate
   AppModel.swift                @MainActor orchestrator; per-share MountState
   Models/
     Share.swift                 config model (no secrets); smb URL + credentialKey
@@ -46,8 +49,8 @@ Sources/ShareMounter/
     SettingsView.swift          NavigationSplitView; drag-reorder, live-apply
                                 (no Save), password → Keychain on Return/blur
 Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
-                                ReachabilityWaiter, CredentialStore, AppModel
-                                (+ Fakes.swift doubles)
+                                ReachabilityWaiter, CredentialStore, AppModel,
+                                SingleInstance (+ Fakes.swift doubles)
 ```
 
 ## Design invariants / gotchas
@@ -75,6 +78,17 @@ Tests/ShareMounterTests/        Share, ShareStore, MountMatcher, Backoff,
   the app and opening Settings.
 - **`MountMatcher` is pure** and handles `//host/share`, `//user@host/share`,
   `//DOMAIN;user@host/share`, sub-paths, and percent-encoding, case-insensitively.
+- **Notification clicks launch by bundle ID — enforce a single instance.**
+  Clicking a banner makes notificationd open the app via LaunchServices,
+  which resolves `jp.nlink.share-mounter` among *all* registered
+  copies (`dist/` dev builds, release-verification extractions,
+  `/Applications`) and may start a different copy than the running one →
+  two menu bar items, double auto-mount attempts. Guarded at two layers:
+  `LSMultipleInstancesProhibited` (Info.plist, stops LaunchServices
+  launches) and a startup check in `Entry.main`
+  (`singleInstanceDecision`, pure + tested) that exits with a stderr note
+  (covers direct exec / `open -n`). Side effect: to run a `dist/` build,
+  quit the installed instance first — a second copy now refuses to start.
 
 ## Status
 

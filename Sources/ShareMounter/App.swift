@@ -14,7 +14,6 @@ enum AppInfo {
     }
 }
 
-@main
 struct ShareMounterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
