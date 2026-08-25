@@ -17,6 +17,7 @@ make test       # swift test
 make run        # swift run (debug)
 make build-app  # assemble + Developer-ID sign dist/ShareMounter.app
 make package    # notarize + staple + zip the release asset
+make verify-release  # gate: .notarized marker + stapler validate (run before upload)
 make brew       # generate the Homebrew cask into ../homebrew-tap
 ```
 
